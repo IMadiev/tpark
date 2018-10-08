@@ -1,5 +1,5 @@
 // Выполнил И. Мадиев, АПО-13
-// RunID 1208
+// RunID 1564
 
 /*
 Submit a solution for A- (Variant 9)
@@ -24,74 +24,35 @@ Memory limit:	64 M
 */
 
 // Решение
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-// Функция поиска нужных строк
-char **filter (char **m, size_t size)
-{
-	char str1[] = "From:";
-	char str2[] = "To:";
-	char str3[] = "Date:";
-	char str4[] = "Subject:";
-	char **result=NULL;
-	size_t str_num=0;
-	result=(char**)realloc(result, (str_num+1)*sizeof(char*));
-	if (result==NULL) {printf ("[error]"); return 0;}
-	for (size_t i=0; i<size; i++)
-		if ((strstr(m[i], str1)==m[i])||(strstr(m[i], str2)==m[i])||(strstr(m[i], str3)==m[i])||(strstr(m[i], str4)==m[i]))
-		{
-			result[str_num]=m[i];
-			str_num++;
-			result=(char**)realloc(result, (str_num+1)*sizeof(char*));
-			if (result==NULL) {printf ("[error]"); return 0;}
-		}
-	result[str_num]=NULL;
-	return result;
-}
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+// Ввод письма
+char **input_mail();
+
+// Функция поиска нужных строк
+char **filter (char **m, size_t size);
+
+// Вывод результата поиска
+void output_result(char **result);
 
 int main()
 {
+	char **file=input_mail();
+	if (file==NULL) return 0;
 	size_t size_file = 0;
-	char **file = (char**)malloc(sizeof(char*));
-	if (file == NULL) { printf("[error]"); return 0; }
-	char* buffer = (char*)malloc(2048*sizeof(char));
-	if (buffer == NULL) { printf("[error]"); return 0; }
-	//чтение файла
-	while (fgets(buffer, 2048, stdin) != NULL)
-	{
-		size_t size_str = 0;
-		while (buffer[size_str] != '\0') 
-			size_str++;
-		size_str++;
-		file[size_file] = (char*)malloc(size_str * sizeof(char));
-		for (size_t i = 0; i < size_str; i++)
-			file[size_file][i] = buffer[i];
-
-		size_file++;
-		file = (char**)realloc(file, (size_file + 1) * sizeof(char*));
-		if (file == NULL) { printf("[error]"); return 0; }
-	}
-	//освобождение буфера
-	free(buffer);
-	//проверка на пустой массив
-	if (size_file == 0) { free(file); return 0; }
-	//вывод массива
-	/*for (size_t i = 0; i < size_file; ++i) 
-	{
-		printf("%s", file[i]);
-	}*/
+		while (file[size_file] != NULL) 
+			size_file++;
+	// Удаление ненужного NULL в конце
+	file=(char**)realloc(file, (size_file*sizeof(char*)));
 	
 	char **result=filter(file, size_file);
-	size_t i=0;
-	while (result[i]!=NULL)
-	{
-		printf("%s", result[i]);
-		i++;
-	}
+	if (result==NULL) return 0;
 
-	//очищение массива
+	output_result(result);
+
+	// очищение массива
 	for (size_t j = 0; j < size_file; ++j) {
 		free(file[j]);
 	}
@@ -99,4 +60,101 @@ int main()
 	free(result);
 
 	return 0;
+}
+
+char **input_mail()
+{
+	size_t size_file = 0;
+	char **file = (char**)malloc(sizeof(char*));
+	if (file == NULL) { printf("[error]"); return NULL; }
+	char buffer[2048];
+	//чтение файла
+	while (fgets(buffer, 2048, stdin) != NULL)
+	{
+		size_t size_str = 0;
+		while (buffer[size_str] != '\0') 
+			size_str++;
+		//Т.к. сейчас size_str - индекс последнего символа строки
+		size_str++;
+		file[size_file] = (char*)malloc(size_str * sizeof(char));
+		if (file[size_file]==NULL)
+		{
+			printf("[error]");
+			for (size_t j = 0; j < size_file; ++j) 
+			{
+				free(file[j]);
+			}
+			free(file);
+			return NULL;
+		}
+		for (size_t i = 0; i < size_str; i++)
+			file[size_file][i] = buffer[i];
+
+		size_file++;
+		char **buf = (char**)realloc(file, (size_file + 1) * sizeof(char*));
+		if (buf == NULL) 
+		{
+			printf("[error]"); 
+			for (size_t j = 0; j < size_file-1; ++j) 
+			{
+				free(file[j]);
+			}
+			free(file);
+			return 0; 
+		}
+		file = buf;
+		buf=NULL;
+	}
+	file[size_file]=NULL;
+	//проверка на пустой массив
+	if (size_file == 0) { free(file); return NULL; }
+	return file;
+}
+
+char **filter (char **m, size_t size)
+{
+	char* str[] = {"Date:", "From:", "To:", "Subject:"};
+	char **result=NULL;
+	size_t str_num=0;
+	size_t buf=6;
+	result=(char**)malloc((buf)*sizeof(char*));
+	if (result==NULL) {printf ("[error]"); return NULL;}
+	for (size_t i=0; i<size; i++)
+		if ((strstr(m[i], str[0])==m[i])||(strstr(m[i], str[1])==m[i])||(strstr(m[i], str[2])==m[i])||(strstr(m[i], str[3])==m[i]))
+		{
+			result[str_num]=m[i];
+			str_num++;
+			if (str_num==buf)
+				{
+					buf*=2;
+					char **buffer=(char**)realloc(result, (buf)*sizeof(char*));
+					if (buffer==NULL) 
+					{
+						printf ("[error]"); 
+						free(result); 
+						return 0;
+					}
+					result=buffer;
+				}
+		}
+	result[str_num]=NULL;
+	char **buffer=(char**)realloc(result, (str_num+1)*sizeof(char*));
+	if (buffer==NULL) 
+	{
+		printf ("[error]"); 
+		free(result); 
+		return 0;
+	}
+	result=buffer;
+	return result;
+}
+
+void output_result(char **result)
+{
+	size_t i=0;
+	while (result[i]!=NULL)
+	{
+		printf("%s", result[i]);
+		i++;
+	}
 }
